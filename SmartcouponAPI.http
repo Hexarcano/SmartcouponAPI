@@ -1,0 +1,6 @@
+@SmartcouponAPI_HostAddress = http://localhost:5174
+
+GET {{SmartcouponAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
