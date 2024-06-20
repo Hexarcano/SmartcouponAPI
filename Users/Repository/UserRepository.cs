@@ -93,6 +93,56 @@ namespace SmartcouponAPI.Users.Repository
                 }
             }
         }
+
+        /// <summary>
+        /// Realiza la validación y regresa un "mensaje" y "los datos basicos" para una sesión.
+        /// </summary>
+        /// <param name="request">Datos para inicio de sesión.</param>
+        /// <param name="_userManager">Instancia de UserManager. Para validar si existe un usuario.</param>
+        /// <param name="_context">Instancia del contexto. Para obtener los datos para crear la sesión.</param>
+        /// <returns>UserLoginResponse, si se completó la validación, Data es diferente de null</returns>
+        public async Task<UserLoginResponse> Login(UserLoginRequest request, UserManager<User> _userManager, UserIdentityDbContext _context)
+        {
+            StringBuilder message = new StringBuilder();
+
+            UserLoginResponse response = new UserLoginResponse()
+            {
+                Message = String.Empty,
+                Data = null
+            };
+
+            User? user = await _userManager.FindByNameAsync(request.UserName);
+
+            if (user == null)
+            {
+                message.AppendLine("El usuario no existe.");
+                response.Message = message.ToString();
+                return response;
+            }
+
+            if (!await _userManager.CheckPasswordAsync(user, request.Password))
+            {
+                message.AppendLine("Contraseña incorrecta.");
+                response.Message = message.ToString();
+                return response;
+            }
+
+            var userData = _context.UserData.FirstOrDefault(x => x.UserName == user.UserName);
+
+            UserLoginResponseData data = new UserLoginResponseData()
+            {
+                UserName = user.UserName,
+                Name = userData.Name,
+                FatherLastName = userData.FatherLastName,
+                MotherLastName = userData.MotherLastName
+            };
+
+            message.AppendLine("Bienvenido:");
+            response.Message = message.ToString();
+            response.Data = data;
+
+            return response;
+        }
     }
 
 

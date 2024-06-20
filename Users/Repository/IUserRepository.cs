@@ -10,5 +10,6 @@ namespace SmartcouponAPI.Users.Repository
     public interface IUserRepository
     {
         Task<UserRegisterResponse> Register(UserRegisterRequest request, UserManager<User> _userManager, UserIdentityDbContext _context);
+        Task<UserLoginResponse> Login(UserLoginRequest request, UserManager<User> _userManager, UserIdentityDbContext _context);
     }
 }

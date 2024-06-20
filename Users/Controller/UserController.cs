@@ -31,13 +31,27 @@ namespace SmartcouponAPI.Users.Controller
             //TokenManager
         }
 
-        // Implementar un middleware para personalizar el mensaje de regreso?
+        // Implementar un middleware para personalizar el mensaje de error validación?
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserRegisterRequest request)
         {
             UserRegisterResponse response = await _repository.Register(request, _userManager, _context);
 
             if (response.UserName == null)
+            {
+                return BadRequest(response);
+            }
+
+            return Ok(response);
+        }
+
+        // Implementar un middleware para personalizar el mensaje de error validación?
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
+        {
+            UserLoginResponse response = await _repository.Login(request, _userManager, _context);
+
+            if (response.Data == null)
             {
                 return BadRequest(response);
             }
