@@ -5,6 +5,7 @@ var services = builder.Services;
 var configurationManager = builder.Configuration;
 
 ConfigureServer.ConfigureConnectionString(services, configurationManager);
+ConfigureServer.ConfigureJwtAuthentication(services, configurationManager.GetSection("Jwt"));
 ConfigureServer.RegisterDependencies(services, configurationManager);
 
 // Add services to the container.
@@ -13,6 +14,8 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 

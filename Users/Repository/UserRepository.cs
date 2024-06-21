@@ -134,7 +134,8 @@ namespace SmartcouponAPI.Users.Repository
                 UserName = user.UserName,
                 Name = userData.Name,
                 FatherLastName = userData.FatherLastName,
-                MotherLastName = userData.MotherLastName
+                MotherLastName = userData.MotherLastName,
+                Email = user.Email
             };
 
             message.AppendLine("Bienvenido:");
