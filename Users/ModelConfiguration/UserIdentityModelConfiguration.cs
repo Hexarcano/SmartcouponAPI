@@ -10,7 +10,10 @@ namespace SmartcouponAPI.Users.ModelConfiguration
         {
             builder.HasKey(x => x.UserName);
 
-            builder.Property(x => x.UserName).IsRequired();
+            builder.Property(x => x.UserName)
+                .IsRequired();
+            builder.Property(x => x.Email)
+                .IsRequired();
 
             builder.HasOne(x => x.UserData)
                 .WithOne(x => x.UserIdentity)

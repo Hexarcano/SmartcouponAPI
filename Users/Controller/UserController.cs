@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartcouponAPI.Context.Identity.UserIdentity;
+using SmartcouponAPI.Tokens.TokenManager;
 using SmartcouponAPI.Users.Model;
 using SmartcouponAPI.Users.Model.Requests;
 using SmartcouponAPI.Users.Model.Responses;
@@ -17,25 +18,19 @@ namespace SmartcouponAPI.Users.Controller
     [Route("api/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
-    {
-        private readonly UserManager<User> _userManager;
-        private readonly UserIdentityDbContext _context;
+    {        
         private readonly UserRepository _repository;
-        //private readonly JWTTokenManager _tokenManager;
 
-        public UserController(UserManager<User> userManager, UserIdentityDbContext context, UserRepository repository)
+        public UserController(UserManager<User> userManager, UserIdentityDbContext context, UserRepository repository, JWTTokenManager tokenManager)
         {
-            _userManager = userManager;
-            _context = context;
             _repository = repository;
-            //TokenManager
         }
 
         // Implementar un middleware para personalizar el mensaje de error validación?
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserRegisterRequest request)
         {
-            UserRegisterResponse response = await _repository.Register(request, _userManager, _context);
+            UserRegisterResponse response = await _repository.Register(request);
 
             if (response.UserName == null)
             {
@@ -49,7 +44,7 @@ namespace SmartcouponAPI.Users.Controller
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
         {
-            UserLoginResponse response = await _repository.Login(request, _userManager, _context);
+            UserLoginResponse response = await _repository.Login(request);
 
             if (response.Data == null)
             {

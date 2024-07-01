@@ -1,7 +1,10 @@
 ﻿using Azure.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SmartcouponAPI.Context.Identity.UserIdentity;
+using SmartcouponAPI.Tokens.Model;
+using SmartcouponAPI.Tokens.TokenManager;
 using SmartcouponAPI.Users.Model;
 using SmartcouponAPI.Users.Model.Requests;
 using SmartcouponAPI.Users.Model.Responses;
@@ -11,14 +14,23 @@ namespace SmartcouponAPI.Users.Repository
 {
     public class UserRepository : IUserRepository
     {
+        private readonly UserManager<User> _userManager;
+        private readonly UserIdentityDbContext _context;
+        private readonly JWTTokenManager _tokenManager;
+
+        public UserRepository(UserManager<User> userManager, UserIdentityDbContext context, JWTTokenManager tokenManager)
+        {
+            _userManager = userManager;
+            _context = context;
+            _tokenManager = tokenManager;
+        }
+
         /// <summary>
         /// Valida y registra un nuevo User
         /// </summary>
         /// <param name="request">Datos para registro de un usuario.</param>
-        /// <param name="_userManager">Instancia de UserManager. Para guardar el usuario</param>
-        /// <param name="_context">Instancia de contexto. Para guardar los datos del usuario</param>
         /// <returns>UserRegisterResponse, si se completó exitosamente el registro, UserName es diferente de null</returns>
-        public async Task<UserRegisterResponse> Register(UserRegisterRequest request, UserManager<User> _userManager, UserIdentityDbContext _context)
+        public async Task<UserRegisterResponse> Register(UserRegisterRequest request)
         {
             StringBuilder message = new StringBuilder();
 
@@ -28,7 +40,7 @@ namespace SmartcouponAPI.Users.Repository
                 UserName = null
             };
 
-            using (var transaction = await _context.Database.BeginTransactionAsync()) // Uso de trasactions
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
@@ -45,7 +57,7 @@ namespace SmartcouponAPI.Users.Repository
                     {
                         message.AppendLine("Error al crear usuario:");
 
-                        foreach (var error in userCreationResult.Errors)
+                        foreach (IdentityError error in userCreationResult.Errors)
                         {
                             message.AppendLine(error.Description);
                         }
@@ -64,8 +76,8 @@ namespace SmartcouponAPI.Users.Repository
                         CURP = request.CURP
                     };
 
-                    await _context.UserData.AddAsync(newUserData);
-                    var affectedRows = _context.SaveChanges();
+                    await _context.UsersData.AddAsync(newUserData);
+                    int affectedRows = _context.SaveChanges();
 
                     if (affectedRows < 1)
                     {
@@ -73,6 +85,7 @@ namespace SmartcouponAPI.Users.Repository
 
                         response.Message = message.ToString();
                         await transaction.RollbackAsync();
+
                         return response;
                     }
 
@@ -85,10 +98,18 @@ namespace SmartcouponAPI.Users.Repository
 
                     return response;
                 }
+                catch (DbUpdateException ex)
+                {
+                    await transaction.RollbackAsync();
+                    response.Message = "Ocurrió un error al guardar los datos. Por favor, inténtelo más tarde.";
+
+                    return response;
+                }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    response.Message = "Ocurrió un error al procesar la solicitud. Por favor, inténtelo más tarde.";
+                    response.Message = "Ocurrió con la base de datos. Por favor, inténtelo más tarde.";
+
                     return response;
                 }
             }
@@ -98,10 +119,8 @@ namespace SmartcouponAPI.Users.Repository
         /// Realiza la validación y regresa un "mensaje" y "los datos basicos" para una sesión.
         /// </summary>
         /// <param name="request">Datos para inicio de sesión.</param>
-        /// <param name="_userManager">Instancia de UserManager. Para validar si existe un usuario.</param>
-        /// <param name="_context">Instancia del contexto. Para obtener los datos para crear la sesión.</param>
         /// <returns>UserLoginResponse, si se completó la validación, Data es diferente de null</returns>
-        public async Task<UserLoginResponse> Login(UserLoginRequest request, UserManager<User> _userManager, UserIdentityDbContext _context)
+        public async Task<UserLoginResponse> Login(UserLoginRequest request)
         {
             StringBuilder message = new StringBuilder();
 
@@ -117,6 +136,7 @@ namespace SmartcouponAPI.Users.Repository
             {
                 message.AppendLine("El usuario no existe.");
                 response.Message = message.ToString();
+
                 return response;
             }
 
@@ -124,25 +144,80 @@ namespace SmartcouponAPI.Users.Repository
             {
                 message.AppendLine("Contraseña incorrecta.");
                 response.Message = message.ToString();
+
                 return response;
             }
 
-            var userData = _context.UserData.FirstOrDefault(x => x.UserName == user.UserName);
-
-            UserLoginResponseData data = new UserLoginResponseData()
+            try
             {
-                UserName = user.UserName,
-                Name = userData.Name,
-                FatherLastName = userData.FatherLastName,
-                MotherLastName = userData.MotherLastName,
-                Email = user.Email
-            };
+                UserData? userData = _context.UsersData.FirstOrDefault(x => x.UserName == user.UserName);
 
-            message.AppendLine("Bienvenido:");
-            response.Message = message.ToString();
-            response.Data = data;
+                if (userData == null)
+                {
+                    message.AppendLine("Error al obtener los datos del usuario.");
+                    response.Message = message.ToString();
 
-            return response;
+                    return response;
+                }
+
+                DateTime issuedAt = DateTime.Now;
+                DateTime expireDate = issuedAt.AddDays(1);
+
+                ClaimsData claimsData = new ClaimsData()
+                {
+                    JWITID = Guid.NewGuid(),
+                    UserName = user.UserName,
+                    Name = userData.Name,
+                    FatherLastName = userData.FatherLastName,
+                    MotherLastName = userData.MotherLastName,
+                    Email = user.Email,
+                    IssuedAt = issuedAt,
+                    ExpirationTime = expireDate
+                };
+
+
+                string tokenString = _tokenManager.GenerateToken(claimsData);
+
+                Token token = new Token()
+                {
+                    TokenId = claimsData.JWITID,
+                    UserName = user.UserName,
+                    TokenString = tokenString,
+                    ExpireDate = expireDate.ToString(),
+                    IsRevoked = false
+                };
+
+                await _context.Tokens.AddAsync(token);
+                int affectedRow = _context.SaveChanges();
+
+                UserLoginResponseData data = new UserLoginResponseData()
+                {
+                    UserName = userData.UserName,
+                    Token = tokenString
+                };
+
+                message.Append("Bienvenido: ");
+                message.Append(userData.Name);
+
+                response.Message = message.ToString();
+                response.Data = data;
+
+                return response;
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                response.Message = "Ocurrió un error al guardar los datos. Por favor, inténtelo más tarde.";
+
+                return response;
+            }
+            catch (DbUpdateException ex)
+            {
+                response.Message = "Ocurrió con la base de datos. Por favor, inténtelo más tarde.";
+
+                return response;
+            }
+
+
         }
     }
 

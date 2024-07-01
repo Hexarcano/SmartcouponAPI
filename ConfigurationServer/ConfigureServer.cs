@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using SmartcouponAPI.Context.Identity.IdentityErrors;
 using SmartcouponAPI.Context.Identity.UserIdentity;
+using SmartcouponAPI.Tokens.TokenManager;
 using SmartcouponAPI.Users.Model;
 using SmartcouponAPI.Users.Repository;
 using System.Text;
@@ -43,12 +44,17 @@ namespace SmartcouponAPI.ConfigurationServer
 
         public static void RegisterDependencies(IServiceCollection services, ConfigurationManager configurationManager)
         {
-            services.AddIdentityApiEndpoints<User>()
+            services.AddIdentity<User, IdentityRole>(options =>
+            {
+                options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                options.User.RequireUniqueEmail = true;
+            })
                 .AddEntityFrameworkStores<UserIdentityDbContext>()
                 .AddDefaultTokenProviders()
                 .AddErrorDescriber<IdentityErrorDescriberSpanish>();
 
             services.AddScoped<UserRepository>();
+            services.AddScoped<JWTTokenManager>();
         }
     }
 }

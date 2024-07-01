@@ -10,6 +10,6 @@
         //public int RoleId { get; set; }
         //public int CompanyId { get; set; }
 
-        public User UserIdentity { get; set; }
+        public User? UserIdentity { get; set; }
     }
 }
