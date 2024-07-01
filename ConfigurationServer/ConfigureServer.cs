@@ -44,11 +44,7 @@ namespace SmartcouponAPI.ConfigurationServer
 
         public static void RegisterDependencies(IServiceCollection services, ConfigurationManager configurationManager)
         {
-            services.AddIdentity<User, IdentityRole>(options =>
-            {
-                options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-                options.User.RequireUniqueEmail = true;
-            })
+            services.AddIdentity<User, IdentityRole>()
                 .AddEntityFrameworkStores<UserIdentityDbContext>()
                 .AddDefaultTokenProviders()
                 .AddErrorDescriber<IdentityErrorDescriberSpanish>();
