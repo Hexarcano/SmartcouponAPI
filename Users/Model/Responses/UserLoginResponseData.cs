@@ -5,6 +5,7 @@
         public required string UserName { get; set; }
         //public int RoleId { get; set; }
         //public int CompanyId { get; set; }
-        public string? Token { get; set; }
+        public string? AccessToken { get; set; }
+        public string? RefreshToken { get; set; }
     }
 }

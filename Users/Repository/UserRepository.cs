@@ -136,6 +136,7 @@ namespace SmartcouponAPI.Users.Repository
             {
                 message.AppendLine("El usuario no existe.");
                 response.Message = message.ToString();
+                response.ResponseType = Requests.EResponseType.BadRequest;
 
                 return response;
             }
@@ -144,6 +145,7 @@ namespace SmartcouponAPI.Users.Repository
             {
                 message.AppendLine("Contraseña incorrecta.");
                 response.Message = message.ToString();
+                response.ResponseType = Requests.EResponseType.BadRequest;
 
                 return response;
             }
@@ -156,12 +158,14 @@ namespace SmartcouponAPI.Users.Repository
                 {
                     message.AppendLine("Error al obtener los datos del usuario.");
                     response.Message = message.ToString();
+                    response.ResponseType = Requests.EResponseType.BadRequest;
 
                     return response;
                 }
 
                 DateTime issuedAt = DateTime.Now;
-                DateTime expireDate = issuedAt.AddDays(1);
+                DateTime accessExpirationTime = issuedAt.AddDays(1);
+                DateTime refreshExpirationTime = issuedAt.AddDays(7);
 
                 ClaimsData claimsData = new ClaimsData()
                 {
@@ -172,18 +176,19 @@ namespace SmartcouponAPI.Users.Repository
                     MotherLastName = userData.MotherLastName,
                     Email = user.Email,
                     IssuedAt = issuedAt,
-                    ExpirationTime = expireDate
+                    AccessExpirationTime = accessExpirationTime,
+                    RefreshExpirationTime = refreshExpirationTime,
                 };
 
+                string accessToken = _tokenManager.GenerateAccessToken(claimsData);
+                string refreshToken = _tokenManager.GenerateRefreshToken(claimsData);
 
-                string tokenString = _tokenManager.GenerateToken(claimsData);
-
-                Token token = new Token()
+                RefreshToken token = new RefreshToken()
                 {
                     TokenId = claimsData.JWITID,
                     UserName = user.UserName,
-                    TokenString = tokenString,
-                    ExpireDate = expireDate.ToString(),
+                    Token = refreshToken,
+                    ExpireDate = refreshExpirationTime.ToString(),
                     IsRevoked = false
                 };
 
@@ -193,7 +198,8 @@ namespace SmartcouponAPI.Users.Repository
                 UserLoginResponseData data = new UserLoginResponseData()
                 {
                     UserName = userData.UserName,
-                    Token = tokenString
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
                 };
 
                 message.Append("Bienvenido: ");
@@ -216,10 +222,6 @@ namespace SmartcouponAPI.Users.Repository
 
                 return response;
             }
-
-
         }
     }
-
-
 }

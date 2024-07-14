@@ -9,6 +9,7 @@
         public required string MotherLastName { get; set; }
         public required string Email { get; set; }
         public DateTime IssuedAt { get; set; }
-        public DateTime ExpirationTime { get; set; }
+        public DateTime AccessExpirationTime { get; set; }
+        public DateTime RefreshExpirationTime { get; set; }
     }
 }

@@ -46,9 +46,10 @@ namespace SmartcouponAPI.Users.Controller
         {
             UserLoginResponse response = await _repository.Login(request);
 
-            if (response.Data == null)
+            if (response.ResponseType == Requests.EResponseType.BadRequest)
             {
                 return BadRequest(response);
+
             }
 
             return Ok(response);

@@ -5,9 +5,9 @@ using SmartcouponAPI.Users.Model;
 
 namespace SmartcouponAPI.Tokens.ModelConfiguration
 {
-    public class TokenModelConfiguration : IEntityTypeConfiguration<Token>
+    public class TokenModelConfiguration : IEntityTypeConfiguration<RefreshToken>
     {
-        public void Configure(EntityTypeBuilder<Token> builder)
+        public void Configure(EntityTypeBuilder<RefreshToken> builder)
         {
             builder.HasKey(x => x.TokenId);
 
@@ -15,7 +15,7 @@ namespace SmartcouponAPI.Tokens.ModelConfiguration
                 .IsRequired();
             builder.Property(x => x.UserName)
                 .IsRequired();
-            builder.Property(x => x.TokenString)
+            builder.Property(x => x.Token)
                 .IsRequired();
             builder.Property(x => x.ExpireDate)
                 .IsRequired();

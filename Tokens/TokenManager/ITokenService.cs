@@ -5,7 +5,8 @@ namespace SmartcouponAPI.Tokens.TokenManager
 {
     public interface ITokenService
     {
-        string GenerateToken(ClaimsData data);
+        string GenerateAccessToken(ClaimsData data);
+        string GenerateRefreshToken(ClaimsData data);
         void RevokeToken(string token);
         bool IsTokenRevoked(string token);
     }

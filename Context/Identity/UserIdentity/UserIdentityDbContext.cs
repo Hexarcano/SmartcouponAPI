@@ -11,7 +11,7 @@ namespace SmartcouponAPI.Context.Identity.UserIdentity
     {
         public DbSet<User> Users { get; set; }
         public DbSet<UserData> UsersData { get; set; }
-        public DbSet<Token> Tokens { get; set; }
+        public DbSet<RefreshToken> Tokens { get; set; }
 
         public UserIdentityDbContext(DbContextOptions<UserIdentityDbContext> options) : base(options) { }
 
@@ -20,7 +20,7 @@ namespace SmartcouponAPI.Context.Identity.UserIdentity
             base.OnModelCreating(builder);
             new UserIdentityModelConfiguration().Configure(builder.Entity<User>());
             new UserDataModelConfiguration().Configure(builder.Entity<UserData>());
-            new TokenModelConfiguration().Configure(builder.Entity<Token>());
+            new TokenModelConfiguration().Configure(builder.Entity<RefreshToken>());
 
             builder.ApplyConfigurationsFromAssembly(typeof(UserIdentityDbContext).Assembly);
         }
